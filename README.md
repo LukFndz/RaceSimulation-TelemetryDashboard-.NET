@@ -2,6 +2,8 @@
 
 Real-time F1-style telemetry dashboard + configurable race simulator built with C#, .NET 8, SignalR, and Chart.js.
 
+On realgps-calculate-telemetry branch, i calculate the telemetry by last year GPs data based on FastF1 API
+
 # 🚀 Features
 # 📡 Real-time Telemetry
 Speed, RPM, Gear
@@ -52,15 +54,7 @@ Stop anytime with Stop Race
 Graphs update in real-time
 Reload page without losing state
 
-# 🧪 Main Endpoints
-Action	Endpoint
-Start race	POST /api/race/start?laps=5
-Stop race	POST /api/race/stop
-Race status	GET /api/race/status
-Latest telemetry	GET /api/telemetryhistory/latest/200
-🛠️ Tech Stack
-
-Backend: .NET 8, ASP.NET Core Web API, SignalR, EF Core + SQLite, Clean Architecture
+Backend: .NET 8, ASP.NET Core Web API, SignalR, EF Core + SQLite, Clean Architecture, FastF1 API (Python)
 Frontend: HTML5, CSS3, Vanilla JS, Chart.js, SignalR Client
 
 # ❤️ Credits
