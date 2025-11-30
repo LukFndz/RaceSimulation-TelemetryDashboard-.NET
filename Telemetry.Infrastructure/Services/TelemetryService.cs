@@ -43,4 +43,15 @@ public class TelemetryService : ITelemetryService
 
         Console.WriteLine("SignalR enviado: " + dto.SpeedKmh);
     }
+
+    public async Task SendRaceProgressAsync(float percent, CancellationToken token)
+    {
+        await _hub.Clients.All.SendAsync("RaceProgress", percent, token);
+    }
+
+    public async Task SendRaceFinishedAsync(CancellationToken token)
+    {
+        await _hub.Clients.All.SendAsync("RaceFinished", token);
+    }
+
 }

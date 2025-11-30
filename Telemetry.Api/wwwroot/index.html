@@ -151,11 +151,151 @@
             align-items: center;
             flex-wrap: wrap;
         }
+
+        /* Race controls */
+        .race-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .race-label {
+            color: #7ce6ff;
+            font-size: 16px;
+        }
+
+        #lapsInput {
+            width: 80px;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #222;
+            background: #0f0f14;
+            color: #7ce6ff;
+            font-size: 16px;
+        }
+
+            #lapsInput:focus {
+                outline: none;
+                border-color: #00aaff;
+            }
+
+        #startRace, #stopRace {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #0077ff, #0099ff);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.18s ease;
+        }
+
+            #startRace:hover:not(:disabled),
+            #stopRace:hover:not(:disabled) {
+                background: linear-gradient(135deg, #0060d4, #0080d4);
+                transform: translateY(-1px);
+            }
+
+            #startRace:disabled,
+            #stopRace:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        /* Race in progress */
+        .race-status {
+            margin-top: 10px;
+            color: #00c8ff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .race-status .dot {
+                width: 10px;
+                height: 10px;
+                background: #00c8ff;
+                border-radius: 50%;
+                animation: pulse 1s infinite;
+            }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: .5;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Progress bar */
+        .race-progress-container {
+            width: 100%;
+            height: 18px;
+            background: #1d1d29;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .race-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00c8ff, #0077ff);
+            transition: width 0.1s linear;
+        }
+
+        /* Finish animation */
+        .race-finished {
+            margin-top: 15px;
+            font-size: 26px;
+            text-align: center;
+            color: #fff;
+            opacity: 0;
+            animation: finishFade 2s ease forwards;
+        }
+
+        @keyfra
+
+
     </style>
 </head>
 <body>
 
     <h1>Telemetry Dashboard</h1>
+
+    <div class="race-controls">
+        <label for="lapsInput" class="race-label">Laps:</label>
+        <input type="number" id="lapsInput" placeholder="Laps" value="5">
+        <button id="startRace" disabled>Start Race</button>
+        <button id="stopRace" disabled>Stop Race</button>
+    </div>
+
+    <div id="raceStatus" class="race-status hidden">
+        <span class="dot"></span>
+        Race in progress…
+    </div>
+
+    <div class="race-progress-container hidden" id="raceProgressContainer">
+        <div class="race-progress-bar" id="raceProgressBar"></div>
+    </div>
+
+    <div id="raceFinished" class="race-finished hidden">
+        🏁 Race Finished! 🏁
+    </div>
+
 
     <!-- Numeric metrics (must remain numbers) -->
     <div class="grid" role="region" aria-label="main-metrics">
@@ -257,6 +397,8 @@
     </section>
 
     <script>
+
+
         /* =========================================================================
            Configuration
            ========================================================================= */
@@ -313,7 +455,10 @@
                 setTimeout(startConnection, 2000);
             }
         }
-        startConnection();
+
+        startConnection().then(() => {
+            initializeRaceState();
+        });
 
         /* =========================================================================
            DOM update (numbers)
@@ -529,35 +674,142 @@
         /* =========================================================================
            Load history button (calls your existing API and populates history charts)
            ========================================================================= */
-        document.getElementById('btnLoadHistory').addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/telemetryhistory/latest/200');
-                if (!res.ok) throw new Error('history request failed');
-                const data = await res.json();
+document.getElementById('btnLoadHistory').addEventListener('click', async () => {
+    try {
+        const res = await fetch('/api/telemetryhistory/latest/200');
+        if (!res.ok) throw new Error('history request failed');
+        const data = await res.json();
 
-                // reset charts
-                [speedHistory, throttleHistory, brakeHistory, fuelHistory, tiresFrontHistory, tiresRearHistory].forEach(c => {
-                    c.data.labels = [];
-                    c.data.datasets.forEach(ds => ds.data = []);
-                });
+        const chartsToReset = [
+            speedHistory, throttleHistory, brakeHistory,
+            fuelHistory, tiresFrontHistory, tiresRearHistory
+        ];
 
-                data.forEach(d => {
-                    const ts = new Date(d.timestamp).toLocaleTimeString();
+        function resetChart(chart) {
+            chart.data.labels.length = 0;
+            chart.data.datasets.forEach(ds => ds.data.length = 0);
+        }
 
-                    speedHistory.data.labels.push(ts); speedHistory.data.datasets[0].data.push(Math.round(d.speed ?? d.speedKmh ?? 0));
-                    throttleHistory.data.labels.push(ts); throttleHistory.data.datasets[0].data.push(Math.round((d.throttle ?? 0) * 100));
-                    brakeHistory.data.labels.push(ts); brakeHistory.data.datasets[0].data.push(Math.round((d.brake ?? 0) * 100));
-                    fuelHistory.data.labels.push(ts); fuelHistory.data.datasets[0].data.push(Number(d.fuel ?? d.fuelRemainingKg ?? 0).toFixed(2));
-                    tiresFrontHistory.data.labels.push(ts); tiresFrontHistory.data.datasets[0].data.push(Math.round(((d.tireFL ?? 0) + (d.tireFR ?? 0)) / 2));
-                    tiresRearHistory.data.labels.push(ts); tiresRearHistory.data.datasets[0].data.push(Math.round(((d.tireRL ?? 0) + (d.tireRR ?? 0)) / 2));
-                });
+        chartsToReset.forEach(resetChart);
 
-                [speedHistory, throttleHistory, brakeHistory, fuelHistory, tiresFrontHistory, tiresRearHistory].forEach(c => c.update());
-            } catch (err) {
-                console.error('Failed to load history:', err);
-                alert('Failed to load history (see console).');
-            }
+        data.forEach(d => {
+            const ts = new Date(d.timestamp).toLocaleTimeString();
+
+            speedHistory.data.labels.push(ts);
+            speedHistory.data.datasets[0].data.push(Math.round(d.speed ?? d.speedKmh ?? 0));
+
+            throttleHistory.data.labels.push(ts);
+            throttleHistory.data.datasets[0].data.push(Math.round((d.throttle ?? 0) * 100));
+
+            brakeHistory.data.labels.push(ts);
+            brakeHistory.data.datasets[0].data.push(Math.round((d.brake ?? 0) * 100));
+
+            fuelHistory.data.labels.push(ts);
+            fuelHistory.data.datasets[0].data.push(Number(d.fuel ?? d.fuelRemainingKg ?? 0).toFixed(2));
+
+            tiresFrontHistory.data.labels.push(ts);
+            tiresFrontHistory.data.datasets[0].data.push(Math.round(((d.tireFL ?? 0) + (d.tireFR ?? 0)) / 2));
+
+            tiresRearHistory.data.labels.push(ts);
+            tiresRearHistory.data.datasets[0].data.push(Math.round(((d.tireRL ?? 0) + (d.tireRR ?? 0)) / 2));
         });
+
+        chartsToReset.forEach(c => c.update());
+
+    } catch (err) {
+        console.error('Failed to load history:', err);
+        alert('Failed to load history (see console).');
+    }
+});
+
+
+        const startBtn = document.getElementById("startRace");
+        const stopBtn = document.getElementById("stopRace");
+        const lapsInput = document.getElementById("lapsInput");
+        const statusBox = document.getElementById("raceStatus");
+        const progressContainer = document.getElementById("raceProgressContainer");
+        const progressBar = document.getElementById("raceProgressBar");
+        const finishBox = document.getElementById("raceFinished");
+
+        // Start Race handler
+        startBtn.onclick = async () => {
+            const laps = document.getElementById("lapsInput").value || 5;
+
+            await fetch(`/api/race/start?laps=${laps}`, { method: "POST" });
+
+            setRaceInProgressUI(true);
+
+            finishBox.classList.add("hidden");
+            statusBox.classList.remove("hidden");
+
+            progressBar.style.width = "0%";
+        };
+
+
+        stopBtn.onclick = async () => {
+
+            const res = await fetch("/api/race/stop", { method: "POST" });
+
+            if (res.ok) {
+                setRaceInProgressUI(false);
+
+                statusBox.classList.add("hidden");
+                finishBox.classList.remove("hidden");
+
+                progressBar.style.width = "0%";
+            }
+        };
+
+
+        // Server-side progress updates
+        connection.on("RaceProgress", percent => {
+            progressBar.style.width = `${percent}%`;
+        });
+
+        // Server-side race finished event
+        connection.on("RaceFinished", () => {
+            startBtn.classList.remove("disabled");
+            startBtn.disabled = false;
+
+            statusBox.classList.add("hidden");
+
+            finishBox.classList.remove("hidden");
+
+            console.log("Race finished!");
+
+            
+            setRaceInProgressUI(false);
+        });
+
+        async function initializeRaceState() {
+            const res = await fetch("/api/race/status");
+            const data = await res.json();
+            console.log(data);
+
+            setRaceInProgressUI(data.status.toLowerCase() === "running");
+        }
+
+        function setRaceInProgressUI(isRunning) {
+
+            console.log(isRunning)
+            const startBtn = document.getElementById("startRace");
+            const stopBtn = document.getElementById("stopRace");
+
+            if (isRunning) {
+                startBtn.disabled = true;
+                startBtn.classList.add("disabled");
+
+                stopBtn.disabled = false;
+                stopBtn.classList.remove("disabled");
+            } else {
+                startBtn.disabled = false;
+                startBtn.classList.remove("disabled");
+
+                stopBtn.disabled = true;
+                stopBtn.classList.add("disabled");
+            }
+        }
+
     </script>
 </body>
 </html>

@@ -17,7 +17,10 @@ builder.Services.AddSignalR();
 
 builder.Services.AddScoped<ITelemetryService, TelemetryService>();
 
-builder.Services.AddHostedService<TelemetrySimulator>();
+//builder.Services.AddHostedService<TelemetrySimulator>();
+
+builder.Services.AddSingleton<IRaceSimulationService, RaceSimulationService>();
+
 
 var app = builder.Build();
 
