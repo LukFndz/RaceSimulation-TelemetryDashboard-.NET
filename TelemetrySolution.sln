@@ -3,21 +3,20 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Api", "Telemetry.Api\Telemetry.Api.csproj", "{5B6070EF-EACC-44C1-BB13-C4C71DD1E8C0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Api", "Telemetry.Api\Telemetry.Api.csproj", "{5B6070EF-EACC-44C1-BB13-C4C71DD1E8C0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Application", "Telemetry.Application\Telemetry.Application.csproj", "{06E9BF62-04A8-432A-AEAA-241E8C56350F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Application", "Telemetry.Application\Telemetry.Application.csproj", "{06E9BF62-04A8-432A-AEAA-241E8C56350F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Domain", "Telemetry.Domain\Telemetry.Domain.csproj", "{66F52F1E-B764-4A95-B784-5EA856F48EB6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Domain", "Telemetry.Domain\Telemetry.Domain.csproj", "{66F52F1E-B764-4A95-B784-5EA856F48EB6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Telemetry.Infrastructure", "Telemetry.Infrastructure\Telemetry.Infrastructure.csproj", "{E527A881-9084-4ECF-B56C-A78AADED2C1C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.Infrastructure", "Telemetry.Infrastructure\Telemetry.Infrastructure.csproj", "{E527A881-9084-4ECF-B56C-A78AADED2C1C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Telemetry.F1Data", "Telemetry.F1Data\Telemetry.F1Data.csproj", "{07E04D0D-5784-4E96-A23D-139DEEDF4C1E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5B6070EF-EACC-44C1-BB13-C4C71DD1E8C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -36,5 +35,12 @@ Global
 		{E527A881-9084-4ECF-B56C-A78AADED2C1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E527A881-9084-4ECF-B56C-A78AADED2C1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E527A881-9084-4ECF-B56C-A78AADED2C1C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07E04D0D-5784-4E96-A23D-139DEEDF4C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07E04D0D-5784-4E96-A23D-139DEEDF4C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07E04D0D-5784-4E96-A23D-139DEEDF4C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07E04D0D-5784-4E96-A23D-139DEEDF4C1E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

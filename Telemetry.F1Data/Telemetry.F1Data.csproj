@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="python" Version="3.14.0" />
+    <PackageReference Include="Python.Runtime" Version="2.7.9" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="fastf1_cache\" />
+  </ItemGroup>
+
+</Project>

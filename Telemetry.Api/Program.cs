@@ -19,6 +19,10 @@ builder.Services.AddScoped<ITelemetryService, TelemetryService>();
 
 //builder.Services.AddHostedService<TelemetrySimulator>();
 
+builder.Services.AddScoped<IF1MetadataService, F1MetadataService>();
+
+builder.Services.AddScoped<IF1RealTelemetryService, F1RealTelemetryService>();
+
 builder.Services.AddSingleton<IRaceSimulationService, RaceSimulationService>();
 
 

@@ -91,21 +91,9 @@
             background: linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
         }
 
-        /* History section */
-        .history {
-            margin-top: 28px;
-        }
-
-        .history-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: var(--gap);
-            margin-top: 12px;
-        }
-
         /* responsive */
         @media (max-width:1000px) {
-            .grid, .charts-row, .history-grid {
+            .grid, .charts-row {
                 grid-template-columns: repeat(2, 1fr);
             }
 
@@ -115,7 +103,7 @@
         }
 
         @media (max-width:640px) {
-            .grid, .charts-row, .history-grid {
+            .grid, .charts-row {
                 grid-template-columns: 1fr;
             }
 
@@ -152,7 +140,7 @@
             flex-wrap: wrap;
         }
 
-        /* Race controls */
+        /* Race controls (real telemetry) */
         .race-controls {
             display: flex;
             align-items: center;
@@ -165,47 +153,6 @@
             font-size: 16px;
         }
 
-        #lapsInput {
-            width: 80px;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #222;
-            background: #0f0f14;
-            color: #7ce6ff;
-            font-size: 16px;
-        }
-
-            #lapsInput:focus {
-                outline: none;
-                border-color: #00aaff;
-            }
-
-        #startRace, #stopRace {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #0077ff, #0099ff);
-            border: none;
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: bold;
-            transition: 0.18s ease;
-        }
-
-            #startRace:hover:not(:disabled),
-            #stopRace:hover:not(:disabled) {
-                background: linear-gradient(135deg, #0060d4, #0080d4);
-                transform: translateY(-1px);
-            }
-
-            #startRace:disabled,
-            #stopRace:disabled {
-                opacity: 0.5;
-                cursor: not-allowed;
-                transform: none;
-            }
-
-        /* Race in progress */
         .race-status {
             margin-top: 10px;
             color: #00c8ff;
@@ -267,25 +214,45 @@
             animation: finishFade 2s ease forwards;
         }
 
-        @keyfra
+        select {
+            padding: 10px;
+            background: #0f0f14;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #7ce6ff;
+            font-size: 15px;
+        }
 
+            select:disabled {
+                opacity: 0.5;
+            }
 
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
     <h1>Telemetry Dashboard</h1>
 
-    <div class="race-controls">
-        <label for="lapsInput" class="race-label">Laps:</label>
-        <input type="number" id="lapsInput" placeholder="Laps" value="5">
-        <button id="startRace" disabled>Start Race</button>
-        <button id="stopRace" disabled>Stop Race</button>
+    <h2 style="color:#7ce6ff; margin-top:10px;">🟥 Real F1 Telemetry (FastF1)</h2>
+
+    <div class="race-controls" style="margin-top:30px;">
+        <label class="race-label">Year:</label>
+        <select id="yearSelect"></select>
+
+        <label class="race-label">Grand Prix:</label>
+        <select id="gpSelect" disabled></select>
+
+        <label class="race-label">Driver:</label>
+        <select id="driverSelect" disabled></select>
+
+        <button id="startRealBtn" class="btn" disabled>Start Real Telemetry</button>
+        <!--<button id="stopRealBtn" class="btn" style="background:#ff4c4c;">Stop Real Telemetry</button>-->
     </div>
 
     <div id="raceStatus" class="race-status hidden">
         <span class="dot"></span>
-        Race in progress…
+        Waiting for API Data…
     </div>
 
     <div class="race-progress-container hidden" id="raceProgressContainer">
@@ -296,8 +263,7 @@
         🏁 Race Finished! 🏁
     </div>
 
-
-    <!-- Numeric metrics (must remain numbers) -->
+    <!-- Numeric metrics -->
     <div class="grid" role="region" aria-label="main-metrics">
         <div class="card" id="card-speed">
             <h2>Speed</h2>
@@ -334,6 +300,18 @@
             <div class="metric" id="fuel">0.0 kg</div>
             <div class="metric-sub muted" id="drs">DRS: OFF</div>
         </div>
+
+        <!-- TIRE TEMPS CARD -->
+        <div class="card" id="card-tires">
+            <h2>Tire Temperatures</h2>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:8px;">
+                <div style="font-size:13px; color:var(--muted);">FL: <span id="tfl">—</span></div>
+                <div style="font-size:13px; color:var(--muted);">FR: <span id="tfr">—</span></div>
+                <div style="font-size:13px; color:var(--muted);">RL: <span id="trl">—</span></div>
+                <div style="font-size:13px; color:var(--muted);">RR: <span id="trr">—</span></div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Main charts row: Speed graph | RPM graph | Throttle/Brake (dual) -->
@@ -354,61 +332,20 @@
         </div>
     </div>
 
-    <!-- History / small charts -->
-    <section class="history" aria-label="history-charts">
-        <div class="row" style="justify-content:space-between; margin-bottom:10px;">
-            <div class="muted">History (live buffer + optional load)</div>
-            <div>
-                <button id="btnLoadHistory" class="btn">Load latest history</button>
-            </div>
-        </div>
-
-        <div class="history-grid">
-            <div class="card">
-                <h2>History Speed</h2>
-                <canvas id="speedHistory"></canvas>
-            </div>
-
-            <div class="card">
-                <h2>History Throttle</h2>
-                <canvas id="throttleHistory"></canvas>
-            </div>
-
-            <div class="card">
-                <h2>History Brake</h2>
-                <canvas id="brakeHistory"></canvas>
-            </div>
-
-            <div class="card">
-                <h2>History Fuel</h2>
-                <canvas id="fuelHistory"></canvas>
-            </div>
-
-            <div class="card">
-                <h2>Tires Front (FL / FR)</h2>
-                <canvas id="tiresFrontHistory"></canvas>
-            </div>
-
-            <div class="card">
-                <h2>Tires Rear (RL / RR)</h2>
-                <canvas id="tiresRearHistory"></canvas>
-            </div>
-        </div>
-    </section>
-
+    <br />
     <script>
 
+        const MAX_POINTS = 120;           
+        const SMOOTH_TENSION = 0.25;      
+        const REFRESH_MS = 150;           
 
         /* =========================================================================
-           Configuration
+           SignalR connection
            ========================================================================= */
-        const MAX_POINTS = 120;           // points kept in live charts (configurable)
-        const SMOOTH_TENSION = 0.25;      // curved lines
-        const REFRESH_MS = 150;           // fallback simulation rate (if needed)
 
-        /* =========================================================================
-           SignalR connection (kept as you had it)
-           ========================================================================= */
+        let waitingForRealData = false;
+        let currentRealLap = 0;
+
         const connection = new signalR.HubConnectionBuilder()
             .withUrl("/hubs/telemetry")
             .configureLogging(signalR.LogLevel.Information)
@@ -427,23 +364,38 @@
                 speedKmh: get("speedKmh", "SpeedKmh", "speed"),
                 rpm: get("rpm", "Rpm"),
                 gear: raw?.gear ?? raw?.Gear ?? 0,
-                throttle: get("throttle", "Throttle"),   // expected 0..1
-                brake: get("brake", "Brake"),            // expected 0..1
+                // throttle and brake normalized to 0..100
+                throttle: (get("throttle", "Throttle") <= 1 ? get("throttle", "Throttle") * 100 : get("throttle", "Throttle")),
+                brake: (get("brake", "Brake") <= 1 ? get("brake", "Brake") * 100 : get("brake", "Brake")),
                 fuelRemainingKg: get("fuelRemainingKg", "FuelRemainingKg", "fuelRemainingKg"),
                 drsActive: raw?.drsActive ?? raw?.DrsActive ?? false,
                 tireTempFL: get("tireTempFL", "TireTempFL", "tireTempFL"),
                 tireTempFR: get("tireTempFR", "TireTempFR", "tireTempFR"),
                 tireTempRL: get("tireTempRL", "TireTempRL", "tireTempRL"),
                 tireTempRR: get("tireTempRR", "TireTempRR", "tireTempRR"),
-                timestamp: raw?.timestamp ?? new Date().toISOString()
+                timestamp: raw?.timestamp ?? new Date().toISOString(),
+                lap: raw?.lap ?? raw?.Lap ?? 0
             };
         }
 
         connection.on("TelemetryReceived", raw => {
             const d = normalizeTelemetry(raw);
+
+            if (waitingForRealData) {
+                waitingForRealData = false;
+                document.querySelector("#raceStatus").innerHTML =
+                    `<span class="dot"></span> Race in progress…`;
+            }
+
+            // update lap progress if provided
+            if (d.lap > currentRealLap) {
+                currentRealLap = d.lap;
+                document.getElementById("raceProgressContainer").classList.remove("hidden");
+                document.getElementById("raceProgressBar").style.width = `${Math.min(100, (currentRealLap % 100))}%`;
+            }
+
             updateUI(d);
             pushLiveData(d);
-            pushHistoryBuffers(d);
         });
 
         async function startConnection() {
@@ -460,29 +412,37 @@
             initializeRaceState();
         });
 
-        /* =========================================================================
-           DOM update (numbers)
-           ========================================================================= */
-        function updateUI(d) {
-            document.getElementById("speed").textContent = `${Math.round(d.speedKmh)} km/h`;
-            document.getElementById("rpm").textContent = `${Math.round(d.rpm)}`;
-            document.getElementById("gear").textContent = (d.gear === 0 || d.gear === "0") ? "N" : String(d.gear);
-            document.getElementById("throttle").textContent = `${Math.round(d.throttle * 100)}%`;
-            document.getElementById("brake").textContent = `${Math.round(d.brake * 100)}%`;
-            document.getElementById("fuel").textContent = `${Number(d.fuelRemainingKg).toFixed(1)} kg`;
-            document.getElementById("drs").textContent = `DRS: ${d.drsActive ? "ON" : "OFF"}`;
-
-            // tire temps (keep numbers)
-            const setT = (id, value) => document.getElementById(id).textContent = `${Math.round(value)}°C`;
-            if (document.getElementById("tfl")) setT("tfl", d.tireTempFL);
-            if (document.getElementById("tfr")) setT("tfr", d.tireTempFR);
-            if (document.getElementById("trl")) setT("trl", d.tireTempRL);
-            if (document.getElementById("trr")) setT("trr", d.tireTempRR);
+        function safeSet(id, text) {
+            const el = document.getElementById(id);
+            if (!el) return false;
+            el.textContent = text;
+            return true;
         }
 
-        /* =========================================================================
-           Chart.js helpers
-           ========================================================================= */
+        function updateUI(d) {
+
+            safeSet("speed", `${Math.round(d.speedKmh)} km/h`);
+            safeSet("rpm", `${Math.round(d.rpm)}`);
+            safeSet("gear", (d.gear === 0 || d.gear === "0") ? "N" : String(d.gear));
+            safeSet("throttle", `${Math.round(d.throttle)}%`);
+            safeSet("brake", `${Math.round(d.brake)}%`);
+
+            // fuel or N/A
+            if (Number(d.fuelRemainingKg) === 0) safeSet("fuel", "N/A (FastF1)");
+            else safeSet("fuel", `${Number(d.fuelRemainingKg).toFixed(1)} kg`);
+
+            safeSet("drs", `DRS: ${d.drsActive ? "ON" : "OFF"}`);
+
+            const markTemp = (id, val) => {
+                if (Number(val) === 0) safeSet(id, "N/A (FastF1)");
+                else safeSet(id, `${Math.round(val)}°C`);
+            };
+            markTemp("tfl", d.tireTempFL);
+            markTemp("tfr", d.tireTempFR);
+            markTemp("trl", d.tireTempRL);
+            markTemp("trr", d.tireTempRR);
+        }
+
         function createLineChart(ctx, label, color, options = {}) {
             return new Chart(ctx, {
                 type: 'line',
@@ -502,7 +462,7 @@
                     }]
                 },
                 options: {
-                    animation: { duration: 400 },
+                    animation: { duration: 0 },
                     maintainAspectRatio: false,
                     responsive: true,
                     scales: {
@@ -552,7 +512,7 @@
                     ]
                 },
                 options: {
-                    animation: { duration: 400 },
+                    animation: { duration: 0 },
                     maintainAspectRatio: false,
                     responsive: true,
                     scales: {
@@ -570,17 +530,11 @@
 
         function pushPoint(chart, label, value, maxPoints = MAX_POINTS) {
             chart.data.labels.push(label);
-            chart.data.datasets.forEach((ds, i) => {
-                // only push if dataset value provided by caller via a value array
-                // caller will push exact values via chart.data.datasets[i].data.push(...)
-            });
-
-            // caller should push to specific datasets before calling update
             while (chart.data.labels.length > maxPoints) {
                 chart.data.labels.shift();
                 chart.data.datasets.forEach(ds => ds.data.shift());
             }
-            chart.update('none'); // lightweight update
+            chart.update('none');
         }
 
         function hexToRgba(hex, alpha = 1) {
@@ -592,9 +546,6 @@
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        /* =========================================================================
-           Create charts (main + history)
-           ========================================================================= */
         const speedChart = createLineChart(document.getElementById('speedChart'), 'Speed (km/h)', '#00e6ff', {
             scales: { y: { suggestedMax: 360 } }
         });
@@ -610,22 +561,10 @@
             { scales: { y: { suggestedMax: 100 } } }
         );
 
-        // small history charts
-        const speedHistory = createLineChart(document.getElementById('speedHistory'), 'Speed History', '#00d1ff');
-        const throttleHistory = createLineChart(document.getElementById('throttleHistory'), 'Throttle History', '#16ff5d');
-        const brakeHistory = createLineChart(document.getElementById('brakeHistory'), 'Brake History', '#ff2e2e');
-        const fuelHistory = createLineChart(document.getElementById('fuelHistory'), 'Fuel History', '#4aa3ff');
-        const tiresFrontHistory = createLineChart(document.getElementById('tiresFrontHistory'), 'Tires Front', '#b06cff');
-        const tiresRearHistory = createLineChart(document.getElementById('tiresRearHistory'), 'Tires Rear', '#ff9ec2');
-
-        /* =========================================================================
-           Live buffers + push helpers
-           ========================================================================= */
         function pushLiveData(d) {
             const label = new Date(d.timestamp).toLocaleTimeString();
 
-            // MAIN charts: push label and dataset values
-            // Speed chart (single dataset)
+            // Speed
             speedChart.data.labels.push(label);
             speedChart.data.datasets[0].data.push(Math.round(d.speedKmh));
 
@@ -633,10 +572,10 @@
             rpmChart.data.labels.push(label);
             rpmChart.data.datasets[0].data.push(Math.round(d.rpm));
 
-            // Throttle/Brake (convert to percent)
+            // Throttle/Brake
             tbChart.data.labels.push(label);
-            tbChart.data.datasets[0].data.push(Math.round(d.throttle * 100));
-            tbChart.data.datasets[1].data.push(Math.round(d.brake * 100));
+            tbChart.data.datasets[0].data.push(Math.round(d.throttle));
+            tbChart.data.datasets[1].data.push(Math.round(d.brake));
 
             // keep length under MAX_POINTS
             [speedChart, rpmChart, tbChart].forEach(c => {
@@ -644,171 +583,142 @@
                     c.data.labels.shift();
                     c.data.datasets.forEach(ds => ds.data.shift());
                 }
-                c.update(); // animated update
-            });
-        }
-
-        // history buffers (keeps longer running history charts)
-        function pushHistoryBuffers(d) {
-            const label = new Date(d.timestamp).toLocaleTimeString();
-
-            speedHistory.data.labels.push(label); speedHistory.data.datasets[0].data.push(Math.round(d.speedKmh));
-            throttleHistory.data.labels.push(label); throttleHistory.data.datasets[0].data.push(Math.round(d.throttle * 100));
-            brakeHistory.data.labels.push(label); brakeHistory.data.datasets[0].data.push(Math.round(d.brake * 100));
-            fuelHistory.data.labels.push(label); fuelHistory.data.datasets[0].data.push(Number(d.fuelRemainingKg).toFixed(2));
-            tiresFrontHistory.data.labels.push(label); tiresFrontHistory.data.datasets[0].data.push(Math.round((d.tireTempFL + d.tireTempFR) / 2));
-            tiresRearHistory.data.labels.push(label); tiresRearHistory.data.datasets[0].data.push(Math.round((d.tireTempRL + d.tireTempRR) / 2));
-
-            // cap history length (larger than main)
-            const HISTORY_LIMIT = 400;
-            [speedHistory, throttleHistory, brakeHistory, fuelHistory, tiresFrontHistory, tiresRearHistory].forEach(c => {
-                while (c.data.labels.length > HISTORY_LIMIT) {
-                    c.data.labels.shift();
-                    c.data.datasets.forEach(ds => ds.data.shift());
-                }
-                // light update without resetting animation
                 c.update('none');
             });
         }
 
-        /* =========================================================================
-           Load history button (calls your existing API and populates history charts)
-           ========================================================================= */
-document.getElementById('btnLoadHistory').addEventListener('click', async () => {
-    try {
-        const res = await fetch('/api/telemetryhistory/latest/200');
-        if (!res.ok) throw new Error('history request failed');
-        const data = await res.json();
+        const YEARS = [2020, 2021, 2022, 2023, 2024];
 
-        const chartsToReset = [
-            speedHistory, throttleHistory, brakeHistory,
-            fuelHistory, tiresFrontHistory, tiresRearHistory
-        ];
-
-        function resetChart(chart) {
-            chart.data.labels.length = 0;
-            chart.data.datasets.forEach(ds => ds.data.length = 0);
-        }
-
-        chartsToReset.forEach(resetChart);
-
-        data.forEach(d => {
-            const ts = new Date(d.timestamp).toLocaleTimeString();
-
-            speedHistory.data.labels.push(ts);
-            speedHistory.data.datasets[0].data.push(Math.round(d.speed ?? d.speedKmh ?? 0));
-
-            throttleHistory.data.labels.push(ts);
-            throttleHistory.data.datasets[0].data.push(Math.round((d.throttle ?? 0) * 100));
-
-            brakeHistory.data.labels.push(ts);
-            brakeHistory.data.datasets[0].data.push(Math.round((d.brake ?? 0) * 100));
-
-            fuelHistory.data.labels.push(ts);
-            fuelHistory.data.datasets[0].data.push(Number(d.fuel ?? d.fuelRemainingKg ?? 0).toFixed(2));
-
-            tiresFrontHistory.data.labels.push(ts);
-            tiresFrontHistory.data.datasets[0].data.push(Math.round(((d.tireFL ?? 0) + (d.tireFR ?? 0)) / 2));
-
-            tiresRearHistory.data.labels.push(ts);
-            tiresRearHistory.data.datasets[0].data.push(Math.round(((d.tireRL ?? 0) + (d.tireRR ?? 0)) / 2));
-        });
-
-        chartsToReset.forEach(c => c.update());
-
-    } catch (err) {
-        console.error('Failed to load history:', err);
-        alert('Failed to load history (see console).');
-    }
-});
-
-
-        const startBtn = document.getElementById("startRace");
-        const stopBtn = document.getElementById("stopRace");
-        const lapsInput = document.getElementById("lapsInput");
-        const statusBox = document.getElementById("raceStatus");
-        const progressContainer = document.getElementById("raceProgressContainer");
+        const yearSelect = document.getElementById("yearSelect");
+        const gpSelect = document.getElementById("gpSelect");
+        const driverSelect = document.getElementById("driverSelect");
+        const startRealBtn = document.getElementById("startRealBtn");
+        //const stopRealBtn = document.getElementById("stopRealBtn");
         const progressBar = document.getElementById("raceProgressBar");
-        const finishBox = document.getElementById("raceFinished");
 
-        // Start Race handler
-        startBtn.onclick = async () => {
-            const laps = document.getElementById("lapsInput").value || 5;
+        function loadYears() {
+            YEARS.forEach(y => {
+                const op = document.createElement("option");
+                op.value = y;
+                op.textContent = y;
+                yearSelect.appendChild(op);
+            });
 
-            await fetch(`/api/race/start?laps=${laps}`, { method: "POST" });
+            gpSelect.disabled = false;
+            loadGPs();
+        }
 
-            setRaceInProgressUI(true);
+        async function loadGPs() {
+            const year = yearSelect.value;
+            gpSelect.disabled = true;
+            driverSelect.disabled = true;
+            startRealBtn.disabled = true;
 
-            finishBox.classList.add("hidden");
-            statusBox.classList.remove("hidden");
+            const res = await fetch(`/api/f1/gps?year=${year}`);
+            const gps = await res.json();
 
-            progressBar.style.width = "0%";
+            gpSelect.innerHTML = "";
+            gps.forEach(name => {
+                const op = document.createElement("option");
+                op.value = name;
+                op.textContent = name;
+                gpSelect.appendChild(op);
+            });
+
+            gpSelect.disabled = false;
+
+            loadDrivers();
+        }
+
+        async function loadDrivers() {
+            const year = yearSelect.value;
+            const gp = gpSelect.value;
+
+            driverSelect.disabled = true;
+            startRealBtn.disabled = true;
+
+            const res = await fetch(`/api/f1/drivers?year=${year}&gp=${gp}`);
+            const drivers = await res.json();
+
+            driverSelect.innerHTML = "";
+            drivers.forEach(d => {
+                const op = document.createElement("option");
+                op.value = d;
+                op.textContent = d;
+                driverSelect.appendChild(op);
+            });
+
+            driverSelect.disabled = false;
+            startRealBtn.disabled = false;
+        }
+
+        startRealBtn.onclick = async () => {
+            const year = yearSelect.value;
+            const gp = gpSelect.value;
+            const driver = driverSelect.value;
+
+            document.getElementById("raceStatus").classList.remove("hidden");
+            document.querySelector("#raceStatus").innerHTML = `
+                        <span class="dot"></span> Waiting for API Data…
+                    `;
+
+            startRealBtn.disabled = true;
+            //stopRealBtn.disabled = false;
+            yearSelect.disabled = true;
+            gpSelect.disabled = true;
+            driverSelect.disabled = true;
+
+            await fetch(`/api/race/start-real?year=${year}&gp=${encodeURIComponent(gp)}&driver=${encodeURIComponent(driver)}`, { method: "POST" });
+
+            waitingForRealData = true;
         };
 
+        //stopRealBtn.onclick = async () => {
+        //    await fetch("/api/race/stop", { method: "POST" });
 
-        stopBtn.onclick = async () => {
+        //    // UI restore
+        //    startRealBtn.disabled = false;
+        //    stopRealBtn.disabled = true;
+        //    yearSelect.disabled = false;
+        //    gpSelect.disabled = false;
+        //    driverSelect.disabled = false;
 
-            const res = await fetch("/api/race/stop", { method: "POST" });
+        //    document.getElementById("raceStatus").classList.add("hidden");
+        //    document.getElementById("raceProgressContainer").classList.add("hidden");
+        //    document.getElementById("raceFinished").classList.add("hidden");
+        //};
 
-            if (res.ok) {
-                setRaceInProgressUI(false);
-
-                statusBox.classList.add("hidden");
-                finishBox.classList.remove("hidden");
-
-                progressBar.style.width = "0%";
-            }
-        };
-
-
-        // Server-side progress updates
-        connection.on("RaceProgress", percent => {
-            progressBar.style.width = `${percent}%`;
-        });
-
-        // Server-side race finished event
-        connection.on("RaceFinished", () => {
-            startBtn.classList.remove("disabled");
-            startBtn.disabled = false;
-
-            statusBox.classList.add("hidden");
-
-            finishBox.classList.remove("hidden");
-
-            console.log("Race finished!");
-
-            
-            setRaceInProgressUI(false);
-        });
-
+        // ---------- Init / state check ----------
         async function initializeRaceState() {
-            const res = await fetch("/api/race/status");
-            const data = await res.json();
-            console.log(data);
+            try {
+                const res = await fetch("/api/race/status");
+                const data = await res.json();
+                console.log("Initial state:", data);
 
-            setRaceInProgressUI(data.status.toLowerCase() === "running");
-        }
-
-        function setRaceInProgressUI(isRunning) {
-
-            console.log(isRunning)
-            const startBtn = document.getElementById("startRace");
-            const stopBtn = document.getElementById("stopRace");
-
-            if (isRunning) {
-                startBtn.disabled = true;
-                startBtn.classList.add("disabled");
-
-                stopBtn.disabled = false;
-                stopBtn.classList.remove("disabled");
-            } else {
-                startBtn.disabled = false;
-                startBtn.classList.remove("disabled");
-
-                stopBtn.disabled = true;
-                stopBtn.classList.add("disabled");
+                if (data.realStatus?.toLowerCase() === "running") {
+                    waitingForRealData = true;
+                    document.querySelector("#raceStatus").classList.remove("hidden");
+                    document.querySelector("#raceStatus").innerHTML = `
+                        <span class="dot"></span> Waiting for API Data…
+                    `;
+                    // lock controls until data arrives
+                    startRealBtn.disabled = true;
+                    //stopRealBtn.disabled = false;
+                    yearSelect.disabled = true;
+                    gpSelect.disabled = true;
+                    driverSelect.disabled = true;
+                }
+            } catch (err) {
+                console.warn("Failed to initialize race state:", err);
             }
         }
+
+        // Events
+        yearSelect.addEventListener("change", loadGPs);
+        gpSelect.addEventListener("change", loadDrivers);
+
+        // Init UI
+        loadYears();
 
     </script>
 </body>
